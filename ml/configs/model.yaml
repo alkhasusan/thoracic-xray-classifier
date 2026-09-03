@@ -1,0 +1,15 @@
+# model.yaml
+# Selects which architecture to build via model.py's get_model_by_name().
+# Change model_name to switch between the baseline and CBAM-DenseNet
+# without touching any code.
+
+# Options: "densenet121_baseline" | "cbam_densenet121"
+model_name: cbam_densenet121
+
+num_classes: 14
+pretrained: true
+
+# CBAM-specific hyperparameters (ignored when model_name is the baseline)
+cbam:
+  reduction_ratio: 16
+  spatial_kernel_size: 7
