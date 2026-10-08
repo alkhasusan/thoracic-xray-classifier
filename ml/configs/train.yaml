@@ -1,41 +1,38 @@
 # train.yaml
-# Training hyperparameters and paths. Kept separate from model.yaml so you
-# can tune training without touching architecture choice, and vice versa.
-
-# --- Data ---
-# ⚠️ These splits must be reused exactly, not regenerated (see project notes).
-# On Kaggle, replace the local paths with the /kaggle/input/... dataset paths.
 data:
   train_csv: ml/data/splits/train.csv
   val_csv: ml/data/splits/val.csv
   test_csv: ml/data/splits/test.csv
-  batch_size: 16
+  # NEW: root folder prepended to each CSV's "Image Path" column.
+  # Set this per environment; leave it out (or null) if your CSVs still
+  # contain full absolute paths already (backward compatible either way).
+  image_root: /kaggle/input/datasets/nih-chest-xrays/data
+  batch_size: 64
 
-# --- Optimization ---
 optimizer:
   name: adam
-  lr: 0.0001
+  # Scaled from 0.0001 using the linear scaling rule: lr *= (new_batch / old_batch)
+  # i.e. 0.0001 * (64/16) = 0.0004. Re-tune if you change batch_size again.
+  lr: 0.0004
   weight_decay: 0.00001
 
-# --- Loss (FocalLoss, from cbam_densenet.py) ---
 loss:
   alpha: 0.25
   gamma: 2.0
 
-# --- Schedule ---
 training:
-  # Start with a pilot run (per project plan) before committing to full training.
-  epochs: 10          # pilot default; bump to 15-20 for the full run
+  epochs: 10
   early_stopping_patience: 3
-  device: cuda        # falls back to cpu automatically if unavailable
+  device: cuda
+  # NEW: if true and a previous run's checkpoint exists, continue training
+  # from where it left off instead of starting over from epoch 0.
+  resume: true
 
-# --- Checkpointing ---
 checkpoints:
   save_dir: ml/checkpoints
   save_best_only: true
-  monitor_metric: val_auc_roc   # per project plan: AUC-ROC is the evaluation metric
+  monitor_metric: val_auc_roc
 
-# --- Logging ---
 logging:
   log_every_n_steps: 50
   output_dir: ml/outputs
