@@ -37,12 +37,14 @@ CBAM_SPATIAL_KERNEL_SIZE = _model_cfg.get("cbam", {}).get("spatial_kernel_size",
 
 # --- Data (from train.yaml) ---
 # Paths in train.yaml are written relative to the repo root, e.g.
-# "ml/data/splits/train.csv" -- on Kaggle, override these three env vars
-# (or edit train.yaml directly) to point at /kaggle/input/... instead.
+# "ml/data/splits/train.csv" -- on Kaggle, override these (or edit
+# train.yaml directly) to point at /kaggle/input/... instead.
+# No VAL_CSV anymore -- val.csv was merged into train.csv upstream.
 TRAIN_CSV = PROJECT_ROOT / _train_cfg["data"]["train_csv"]
-VAL_CSV = PROJECT_ROOT / _train_cfg["data"]["val_csv"]
 TEST_CSV = PROJECT_ROOT / _train_cfg["data"]["test_csv"]
 BATCH_SIZE = _train_cfg["data"]["batch_size"]
+# Root folder for images. None if CSVs already contain full paths.
+IMAGE_ROOT = _train_cfg["data"].get("image_root")
 
 # --- Optimizer ---
 LEARNING_RATE = _train_cfg["optimizer"]["lr"]
@@ -54,7 +56,8 @@ LOSS_GAMMA = _train_cfg["loss"]["gamma"]
 
 # --- Training schedule ---
 EPOCHS = _train_cfg["training"]["epochs"]
-EARLY_STOPPING_PATIENCE = _train_cfg["training"].get("early_stopping_patience")
+# Whether to resume from a previous checkpoint if one exists
+RESUME = _train_cfg["training"].get("resume", False)
 
 _requested_device = _train_cfg["training"].get("device", "cuda")
 DEVICE = torch.device(
@@ -63,8 +66,6 @@ DEVICE = torch.device(
 
 # --- Checkpoints ---
 CHECKPOINT_DIR = PROJECT_ROOT / _train_cfg["checkpoints"]["save_dir"]
-SAVE_BEST_ONLY = _train_cfg["checkpoints"].get("save_best_only", True)
-MONITOR_METRIC = _train_cfg["checkpoints"].get("monitor_metric", "val_loss")
 
 # --- Logging ---
 LOG_EVERY_N_STEPS = _train_cfg["logging"].get("log_every_n_steps", 50)
