@@ -8,7 +8,8 @@ import torch
 from src.datasets.dataloader import get_dataloaders
 from src.datasets.dataset import ChestXrayDataset
 from src.evaluation.confusion_matrix import (
-    get_predictions, compute_confusion_matrices, print_confusion_matrices,
+    get_predictions, best_thresholds, compute_confusion_matrices,
+    print_confusion_matrices,
 )
 from src.models.cbam_densenet import FocalLoss
 from src.models.model import get_model_by_name
@@ -26,8 +27,8 @@ def main():
     print(f"Using device: {DEVICE}")
     print(f"Model: {MODEL_NAME}")
 
-    # No more val split — train.csv now includes what used to be val.csv.
-    # test_loader is held out purely for final evaluation, not touched during training.
+    # No val split: train.csv includes what used to be val.csv.
+    # test_loader is held out purely for final evaluation.
     train_loader, test_loader = get_dataloaders(
         train_csv=TRAIN_CSV, test_csv=TEST_CSV,
         batch_size=BATCH_SIZE, image_root=IMAGE_ROOT,
@@ -64,34 +65,31 @@ def main():
         start_epoch = ckpt["epoch"] + 1
         print(f"Resumed at epoch {start_epoch + 1}")
     else:
-        print("\nNo checkpoint to resume from (or resume disabled) — starting fresh.")
+        print("\nNo checkpoint to resume from (or resume disabled) - starting fresh.")
 
     # --------------------------
-    # Training Loop — fixed epochs, no validation-based early stopping
+    # Training loop: fixed epochs, no validation-based early stopping
     # --------------------------
     for epoch in range(start_epoch, EPOCHS):
         print(f"\nEpoch {epoch + 1}/{EPOCHS}")
 
         train_loss = train_one_epoch(model, train_loader, optimizer, criterion, DEVICE)
-        print("✅ Training finished")
+        print("Training finished")
         print(f"Train Loss: {train_loss:.4f}")
 
-        # Save full resume state every epoch, so a killed/restarted session
-        # can always continue from here.
         torch.save({
             "epoch": epoch,
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
         }, resume_checkpoint_path)
 
-    # Save the final trained model (pure weights, for gradcam.py / inference)
     torch.save(model.state_dict(), final_model_path)
-    print(f"\n✅ Training complete. Saved final model to {final_model_path}")
+    print(f"\nTraining complete. Saved final model to {final_model_path}")
 
     # --------------------------
     # Final evaluation on the held-out test set
     # --------------------------
-    print("\n➡️ Evaluating on test set...")
+    print("\nEvaluating on test set...")
     test_loss, test_auc, per_class_auc = validate(
         model, test_loader, criterion, DEVICE, disease_names=disease_names,
     )
@@ -106,10 +104,18 @@ def main():
     # --------------------------
     # Confusion matrices on the test set
     # --------------------------
-    print("\n➡️ Generating confusion matrices...")
     y_true, y_probs = get_predictions(model, test_loader, DEVICE)
-    matrices = compute_confusion_matrices(y_true, y_probs, disease_names, threshold=0.5)
-    print_confusion_matrices(matrices)
+
+    print("\nConfusion matrices, fixed threshold = 0.5")
+    matrices_fixed = compute_confusion_matrices(y_true, y_probs, disease_names, threshold=0.5)
+    print_confusion_matrices(matrices_fixed)
+
+    thr = best_thresholds(y_true, y_probs)
+    print("\nConfusion matrices, per-class tuned thresholds (Youden's J)")
+    for name, t in zip(disease_names, thr):
+        print(f"   {name}: threshold = {t:.4f}")
+    matrices_tuned = compute_confusion_matrices(y_true, y_probs, disease_names, threshold=thr)
+    print_confusion_matrices(matrices_tuned)
 
 
 if __name__ == "__main__":

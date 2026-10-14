@@ -2,23 +2,19 @@
 confusion_matrix.py
 
 Generates per-class confusion matrices for multi-label chest X-ray
-classification. Since each image can have multiple disease labels,
-a single confusion matrix doesn't apply the way it would for
-single-label classification — instead, each of the 14 diseases gets
-its own 2x2 (TN/FP/FN/TP) matrix, treating that disease as an
-independent binary "present vs absent" prediction.
+classification. Each of the 14 diseases gets its own 2x2 (TN/FP/FN/TP)
+matrix, treating that disease as an independent "present vs absent" prediction.
 
 Usage:
-    from confusion_matrix import get_predictions, compute_confusion_matrices, print_confusion_matrices
-
     y_true, y_probs = get_predictions(model, test_loader, device)
-    matrices = compute_confusion_matrices(y_true, y_probs, DISEASES, threshold=0.5)
+    thr = best_thresholds(y_true, y_probs)
+    matrices = compute_confusion_matrices(y_true, y_probs, DISEASES, threshold=thr)
     print_confusion_matrices(matrices)
 """
 
 import numpy as np
 import torch
-from sklearn.metrics import multilabel_confusion_matrix
+from sklearn.metrics import multilabel_confusion_matrix, roc_curve
 
 
 @torch.no_grad()
@@ -48,10 +44,27 @@ def get_predictions(model, dataloader, device):
     return y_true, y_probs
 
 
+def best_thresholds(y_true, y_probs):
+    """
+    Per-class threshold maximizing TPR - FPR (Youden's J statistic).
+    Falls back to 0.5 for any class where only one label value is present.
+    """
+    thresholds = []
+    for i in range(y_true.shape[1]):
+        col = y_true[:, i]
+        if col.sum() == 0 or col.sum() == len(col):
+            thresholds.append(0.5)
+            continue
+        fpr, tpr, thr = roc_curve(col, y_probs[:, i])
+        thresholds.append(thr[np.argmax(tpr - fpr)])
+    return np.array(thresholds)
+
+
 def compute_confusion_matrices(y_true, y_probs, class_names, threshold=0.5):
     """
     Thresholds predicted probabilities and computes one 2x2 confusion
-    matrix per class.
+    matrix per class. `threshold` can be a single float (e.g. 0.5) or an
+    array with one threshold per class.
 
     Returns:
         dict mapping disease name -> {"tn":, "fp":, "fn":, "tp":}
@@ -81,10 +94,7 @@ def print_confusion_matrices(matrices):
 
 
 def plot_confusion_matrices(matrices, class_names, save_path=None):
-    """
-    Plots all 14 confusion matrices as a grid of heatmaps.
-    Requires matplotlib and seaborn.
-    """
+    """Plots all 14 confusion matrices as a grid of heatmaps (needs matplotlib + seaborn)."""
     import matplotlib.pyplot as plt
     import seaborn as sns
 
@@ -104,7 +114,6 @@ def plot_confusion_matrices(matrices, class_names, save_path=None):
         )
         axes[i].set_title(name, fontsize=10)
 
-    # hide any unused subplot slots
     for j in range(len(class_names), len(axes)):
         axes[j].axis("off")
 
