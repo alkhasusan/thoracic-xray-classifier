@@ -3,6 +3,8 @@ train.py
 Main training script.
 """
 from pathlib import Path
+import json
+from config import MODEL_CONFIG, TRAIN_CONFIG, OUTPUT_DIR
 
 import torch
 from src.datasets.dataloader import get_dataloaders
@@ -116,6 +118,22 @@ def main():
         print(f"   {name}: threshold = {t:.4f}")
     matrices_tuned = compute_confusion_matrices(y_true, y_probs, disease_names, threshold=thr)
     print_confusion_matrices(matrices_tuned)
+
+    results = {
+        "model": MODEL_NAME,
+        "epochs": EPOCHS,
+        "batch_size": BATCH_SIZE,
+        "test_loss": float(test_loss),
+        "test_mean_auc": float(test_auc),
+        "per_class_auc": {k: (None if v != v else float(v)) for k, v in per_class_auc.items()},
+        "tuned_thresholds": {n: float(t) for n, t in zip(disease_names, thr)},
+        "confusion_fixed_0.5": matrices_fixed,
+        "confusion_tuned": matrices_tuned,
+    }
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    with open(OUTPUT_DIR / f"results_{MODEL_NAME}.json", "w") as f:
+        json.dump(results, f, indent=2)
+    print(f"Saved results to {OUTPUT_DIR / f'results_{MODEL_NAME}.json'}")
 
 
 if __name__ == "__main__":

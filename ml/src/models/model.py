@@ -29,6 +29,7 @@ import torch.nn as nn
 from torchvision import models
 
 from .cbam_densenet import CBAMDenseNet121
+from .backbones import BACKBONE_BUILDERS
 
 
 def get_model(num_classes=14, pretrained=True, **kwargs):
@@ -90,6 +91,7 @@ def get_cbam_model(num_classes=14, pretrained=True, reduction_ratio=16, spatial_
 MODEL_REGISTRY = {
     "densenet121_baseline": get_model,
     "cbam_densenet121": get_cbam_model,
+    **BACKBONE_BUILDERS,
 }
 
 
