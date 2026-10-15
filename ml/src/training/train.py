@@ -4,7 +4,6 @@ Main training script.
 """
 from pathlib import Path
 import json
-from config import MODEL_CONFIG, TRAIN_CONFIG, OUTPUT_DIR
 
 import torch
 from src.datasets.dataloader import get_dataloaders

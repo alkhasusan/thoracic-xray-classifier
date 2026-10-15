@@ -26,7 +26,7 @@ training:
   device: cuda
   # NEW: if true and a previous run's checkpoint exists, continue training
   # from where it left off instead of starting over from epoch 0.
-  resume: true
+  resume: false
 
 checkpoints:
   save_dir: ml/checkpoints
