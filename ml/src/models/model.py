@@ -19,6 +19,7 @@ get_model_by_name() lets configs/model.yaml select a backbone by name.
 
 import torch.nn as nn
 from torchvision import models
+from .scse_densenet import get_scse_densenet121
 
 from .backbones import (
     build_efficientnet_b0,
@@ -47,6 +48,7 @@ MODEL_REGISTRY = {
     "efficientnet_b0": build_efficientnet_b0,
     "vgg16_bn": build_vgg16_bn,
     "mobilenet_v3_large": build_mobilenet_v3_large,
+    "scse_densenet121": get_scse_densenet121
 }
 
 
