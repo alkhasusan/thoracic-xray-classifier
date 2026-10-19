@@ -12,7 +12,7 @@ from src.evaluation.confusion_matrix import (
     get_predictions, best_thresholds, compute_confusion_matrices,
     print_confusion_matrices,
 )
-from src.models.cbam_densenet import FocalLoss
+from src.training.losses import FocalLoss
 from src.models.model import get_model_by_name
 from src.training.trainer import train_one_epoch
 from src.training.validate import validate
