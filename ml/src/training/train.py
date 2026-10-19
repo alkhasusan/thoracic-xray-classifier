@@ -17,7 +17,7 @@ from src.models.model import get_model_by_name
 from src.training.trainer import train_one_epoch
 from src.training.validate import validate
 from src.utils.config import (
-    BATCH_SIZE, CBAM_REDUCTION_RATIO, CBAM_SPATIAL_KERNEL_SIZE,
+    BATCH_SIZE,
     CHECKPOINT_DIR, DEVICE, EPOCHS, IMAGE_ROOT, LEARNING_RATE,
     LOSS_ALPHA, LOSS_GAMMA, MODEL_NAME, NUM_CLASSES, OUTPUT_DIR,
     PRETRAINED, RESUME, TEST_CSV, TRAIN_CSV, WEIGHT_DECAY,
@@ -40,7 +40,6 @@ def main():
 
     model = get_model_by_name(
         MODEL_NAME, num_classes=NUM_CLASSES, pretrained=PRETRAINED,
-        reduction_ratio=CBAM_REDUCTION_RATIO, spatial_kernel_size=CBAM_SPATIAL_KERNEL_SIZE,
     )
     model = model.to(DEVICE)
 

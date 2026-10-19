@@ -16,12 +16,12 @@ from pathlib import Path
 import torch
 import yaml
 
-_THIS_FILE = Path(__file__).resolve()
-ML_ROOT = _THIS_FILE.parents[2]        # .../ml
-PROJECT_ROOT = _THIS_FILE.parents[3]   # repo root
-CONFIG_DIR = ML_ROOT / "configs"
+_THIS_FILE = Path(__file__).resolve()  # finds the exact location of the current Python file on your computer
+ML_ROOT = _THIS_FILE.parents[2]        # .../ml folder
+PROJECT_ROOT = _THIS_FILE.parents[3]   # repo root (thoracic-xray-classifier)
+CONFIG_DIR = ML_ROOT / "configs"       # this folder ml/configs have model.yaml and train.yaml
 
-with open(CONFIG_DIR / "model.yaml", encoding="utf-8") as f:
+with open(CONFIG_DIR / "model.yaml", encoding="utf-8") as f:    #encoding is how text is decoded into Python strings
     _model_cfg = yaml.safe_load(f)
 
 with open(CONFIG_DIR / "train.yaml", encoding="utf-8") as f:
@@ -32,8 +32,6 @@ with open(CONFIG_DIR / "train.yaml", encoding="utf-8") as f:
 MODEL_NAME = _model_cfg["model_name"]
 NUM_CLASSES = _model_cfg["num_classes"]
 PRETRAINED = _model_cfg["pretrained"]
-CBAM_REDUCTION_RATIO = _model_cfg.get("cbam", {}).get("reduction_ratio", 16)
-CBAM_SPATIAL_KERNEL_SIZE = _model_cfg.get("cbam", {}).get("spatial_kernel_size", 7)
 
 # --- Data (from train.yaml) ---
 # Paths in train.yaml are written relative to the repo root, e.g.

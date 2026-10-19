@@ -1,7 +1,6 @@
 # train.yaml
 data:
   train_csv: ml/data/splits/train.csv
-  val_csv: ml/data/splits/val.csv
   test_csv: ml/data/splits/test.csv
   # NEW: root folder prepended to each CSV's "Image Path" column.
   # Set this per environment; leave it out (or null) if your CSVs still
