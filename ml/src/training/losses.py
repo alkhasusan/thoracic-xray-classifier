@@ -17,7 +17,8 @@
     Expects RAW LOGITS as input (not sigmoid probabilities) -- matches
     CBAMDenseNet121's default forward() output.
     """
-
+import torch
+import torch.nn as nn
 
 class FocalLoss(nn.Module):
     def __init__(self, alpha=0.25, gamma=2.0, reduction="mean"):

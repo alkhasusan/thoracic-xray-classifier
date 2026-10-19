@@ -3,12 +3,15 @@ gradcam.py
 
 Grad-CAM for multi-label Chest X-ray classification.
 
-Rewritten to work with BOTH model architectures (no hardcoded checkpoint
-path, no hardcoded architecture):
-  - "densenet121_baseline" -- plain DenseNet-121 (torchvision structure).
-  - "cbam_densenet121"     -- CBAM-DenseNet121 (custom forward pass that
-    manually walks backbone.features and inserts CBAM after each dense
-    block -- see cbam_densenet.py).
+Works with any model from model.py's registry that keeps torchvision's
+DenseNet structure (a `features` module ending in `norm5`):
+  - "densenet121_baseline" -- plain DenseNet-121.
+  - "scse_densenet121"     -- DenseNet-121 with an scSE attention block after
+                              each dense block (see scse_densenet.py). It keeps
+                              the same `features` / `classifier` structure, so
+                              the same target layer is used for both models,
+                              which makes baseline vs scSE heatmaps directly
+                              comparable.
 
 Since this is multi-label (not single-label ImageNet-style) classification,
 Grad-CAM here is computed PER DISEASE, not per single predicted class: you
@@ -24,8 +27,8 @@ Usage (typical FastAPI inference-endpoint flow):
     )
 
     model = load_model_for_gradcam(
-        checkpoint_path="ml/checkpoints/best_cbam_densenet121.pth",
-        model_name="cbam_densenet121",
+        checkpoint_path="ml/checkpoints/final_scse_densenet121.pth",
+        model_name="scse_densenet121",
         num_classes=14,
         device=device,
     )
@@ -36,10 +39,15 @@ Usage (typical FastAPI inference-endpoint flow):
         transform=val_transform,  # your existing transforms.py val_transform
         disease_names=ChestXrayDataset.DISEASES,
         device=device,
-        threshold=0.5,            # or use top_k=3 instead
+        top_k=3,                  # recommended; see the note on `threshold` below
     )
 
     # result["predictions"] -> [{"disease": ..., "probability": ..., "heatmap_png_base64": ...}, ...]
+
+NOTE on thresholds: these models' probabilities rarely reach 0.5 (rare diseases
++ focal loss), so threshold=0.5 will usually select NOTHING. Use top_k, or pass
+per-class thresholds (a length-14 array, same order as disease_names), e.g. the
+"tuned_thresholds" saved in the training run's results JSON.
 """
 
 import base64
@@ -59,22 +67,14 @@ from PIL import Image
 def _get_target_layer(model):
     """
     Returns the nn.Module Grad-CAM should hook into, auto-detected from
-    the model's structure. This is the piece that breaks if you hardcode
-    a layer path for one architecture and then swap in the other.
+    the model's structure.
 
-    - CBAM-DenseNet121: hooks the LAST CBAM block's output. This is
-      deliberate, not arbitrary -- it shows what the model attended to
-      AFTER attention was applied, which is the actual novel component
-      of this architecture. (Hooking backbone.features.norm5 instead
-      would only show post-BN features, one step removed from what CBAM
-      actually did.)
-    - Plain DenseNet-121 baseline (torchvision structure): hooks
-      features.norm5, the standard Grad-CAM target for DenseNet
-      (last conv-derived feature map before global pooling).
+    For DenseNet-121 (plain or with scSE blocks, which keep torchvision's
+    structure), the target is features.norm5, the standard Grad-CAM target
+    for DenseNet: the last conv-derived feature map before global pooling.
+    In the scSE model the attention blocks sit before norm5, so this map
+    already reflects their effect.
     """
-    if hasattr(model, "cbam_blocks"):
-        return model.cbam_blocks[-1]
-
     if hasattr(model, "features") and hasattr(model.features, "norm5"):
         return model.features.norm5
 
@@ -110,8 +110,7 @@ class GradCAM:
         # conflicts with that in-place op ("Output 0 of BackwardHookFunction
         # is a view and is being modified inplace", a known PyTorch gotcha).
         # Hooking the gradient directly on the output TENSOR (inside the
-        # forward hook, via output.register_hook) sidesteps this entirely
-        # and works identically for both architectures.
+        # forward hook, via output.register_hook) sidesteps this entirely.
         self._fwd_handle = self.target_layer.register_forward_hook(self._save_activation)
 
     def _save_activation(self, module, inputs, output):
@@ -257,8 +256,11 @@ def run_gradcam_inference(
         disease_names: ordered list of 14 disease names, e.g.
             ChestXrayDataset.DISEASES -- order MUST match the model's
             output indices.
-        threshold: probability cutoff for "highly predicted." Ignored if
-            top_k is set.
+        threshold: probability cutoff for "highly predicted." Either a single
+            float, or a length-14 array of per-class thresholds (same order
+            as disease_names). Ignored if top_k is set. NOTE: with these
+            models a 0.5 cutoff usually selects nothing -- prefer top_k or
+            per-class tuned thresholds.
         top_k: if set, always return exactly this many diseases (the
             highest-probability ones), regardless of threshold.
         alpha: heatmap overlay opacity, passed to overlay_heatmap_on_image.
@@ -290,7 +292,7 @@ def run_gradcam_inference(
         if top_k is not None:
             selected_indices = np.argsort(-probs)[:top_k]
         else:
-            selected_indices = np.where(probs >= threshold)[0]
+            selected_indices = np.where(probs >= np.asarray(threshold))[0]
             selected_indices = selected_indices[np.argsort(-probs[selected_indices])]
 
         predictions = []
@@ -326,8 +328,7 @@ if __name__ == "__main__":
     from pathlib import Path
 
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # ml/src
-    from models.cbam_densenet import CBAMDenseNet121
-    from models.model import get_model
+    from models.model import get_model_by_name
 
     device = torch.device("cpu")
 
@@ -340,11 +341,12 @@ if __name__ == "__main__":
         (np.random.rand(300, 400, 3) * 255).astype("uint8")
     )
 
-    for label, model in [
-        ("CBAM-DenseNet121", CBAMDenseNet121(num_classes=14, pretrained=False)),
-        ("Baseline DenseNet-121", get_model(num_classes=14, pretrained=False)),
+    for label, name in [
+        ("scSE-DenseNet121", "scse_densenet121"),
+        ("Baseline DenseNet-121", "densenet121_baseline"),
     ]:
         print(f"\nTesting Grad-CAM on {label} (random weights, offline test)...")
+        model = get_model_by_name(name, num_classes=14, pretrained=False)
         model.eval()
 
         result = run_gradcam_inference(
@@ -363,6 +365,6 @@ if __name__ == "__main__":
             assert isinstance(pred["heatmap_png_base64"], str)
             assert len(pred["heatmap_png_base64"]) > 0
         print(f"  Top-3 predictions: {[(p['disease'], round(p['probability'], 3)) for p in result['predictions']]}")
-        print(f"  Each has a valid base64 PNG heatmap: ✔")
+        print("  Each has a valid base64 PNG heatmap: OK")
 
     print("\nAll Grad-CAM checks passed for both architectures.")
