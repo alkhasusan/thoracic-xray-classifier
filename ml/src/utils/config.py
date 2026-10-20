@@ -44,6 +44,8 @@ BATCH_SIZE = _train_cfg["data"]["batch_size"]
 # Root folder for images. None if CSVs already contain full paths.
 IMAGE_ROOT = _train_cfg["data"].get("image_root")
 
+CACHE_DIR = _train_cfg["data"].get("cache_dir")
+
 # --- Optimizer ---
 LEARNING_RATE = _train_cfg["optimizer"]["lr"]
 WEIGHT_DECAY = _train_cfg["optimizer"].get("weight_decay", 0.0)

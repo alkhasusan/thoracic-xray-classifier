@@ -17,7 +17,7 @@ from src.models.model import get_model_by_name
 from src.training.trainer import train_one_epoch
 from src.training.validate import validate
 from src.utils.config import (
-    BATCH_SIZE,
+    BATCH_SIZE, CACHE_DIR,
     CHECKPOINT_DIR, DEVICE, EPOCHS, IMAGE_ROOT, LEARNING_RATE,
     LOSS_ALPHA, LOSS_GAMMA, MODEL_NAME, NUM_CLASSES, OUTPUT_DIR,
     PRETRAINED, RESUME, TEST_CSV, TRAIN_CSV, WEIGHT_DECAY,
@@ -31,8 +31,11 @@ def main():
     # No val split: train.csv includes what used to be val.csv.
     # test_loader is held out purely for final evaluation.
     train_loader, test_loader = get_dataloaders(
-        train_csv=TRAIN_CSV, test_csv=TEST_CSV,
-        batch_size=BATCH_SIZE, image_root=IMAGE_ROOT,
+        train_csv=TRAIN_CSV,
+        test_csv=TEST_CSV,
+        batch_size=BATCH_SIZE,
+        image_root=IMAGE_ROOT,
+        cache_dir=CACHE_DIR,
     )
 
     print(f"Train batches: {len(train_loader)}")

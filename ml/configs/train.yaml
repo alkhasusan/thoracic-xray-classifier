@@ -7,6 +7,7 @@ data:
   # contain full absolute paths already (backward compatible either way).
   image_root: /kaggle/input/datasets/nih-chest-xrays/data
   batch_size: 64
+  cache_dir: null
 
 optimizer:
   name: adam
