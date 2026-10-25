@@ -3,11 +3,10 @@
 # Change model_name to switch between the baseline and CBAM-DenseNet
 # without touching any code.
 
-# Options: "densenet121_baseline" | "cbam_densenet121"
-model_name: cbam_densenet121
+model_name: scse_densenet121
 
 num_classes: 14
-pretrained: true
+pretrained: false
 
 # CBAM-specific hyperparameters (ignored when model_name is the baseline)
 cbam:
