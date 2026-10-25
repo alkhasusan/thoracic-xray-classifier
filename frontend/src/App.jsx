@@ -1,5 +1,5 @@
-
-import { useRef, useState } from "react";
+import ModelComparison from "./ModelComparison";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
 const API_URL = "http://127.0.0.1:8000";
@@ -8,10 +8,42 @@ function App() {
   const fileInputRef = useRef(null);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState("");
+  const [page, setPage] = useState("predict");
   const [results, setResults] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [backendStatus, setBackendStatus] = useState("checking");
+
+  useEffect(() => {
+    let active = true;
+
+    async function checkBackend() {
+      try {
+        const response = await fetch(`${API_URL}/health`);
+        const data = await response.json();
+        if (active) {
+          setBackendStatus(
+            response.ok && data.status === "ready" ? "ready" : "unavailable"
+          );
+        }
+      } catch {
+        if (active) setBackendStatus("offline");
+      }
+    }
+
+    checkBackend();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (preview) URL.revokeObjectURL(preview);
+    },
+    [preview]
+  );
 
   function selectFile(selectedFile) {
     setError("");
@@ -31,6 +63,7 @@ function App() {
       return;
     }
 
+    if (preview) URL.revokeObjectURL(preview);
     setFile(selectedFile);
     setPreview(URL.createObjectURL(selectedFile));
   }
@@ -98,6 +131,10 @@ function App() {
 
   const topPrediction = results?.predictions?.[0];
 
+  if (page === "comparison") {
+    return <ModelComparison onBack={() => setPage("predict")} />;
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -110,9 +147,25 @@ function App() {
         </a>
 
         <div className="status-pill">
-          <span className="status-dot" />
-          SCSE-DenseNet121
+          <span
+            className={`status-dot status-dot-${backendStatus}`}
+            aria-hidden="true"
+          />
+          {backendStatus === "ready"
+            ? "SCSE-DenseNet121 ready"
+            : backendStatus === "checking"
+              ? "Checking model..."
+              : backendStatus === "unavailable"
+                ? "Model unavailable"
+                : "Backend offline"}
         </div>
+        <button
+            type="button"
+            className="comparison-nav-button"
+            onClick={() => setPage("comparison")}
+    >
+       Model comparison →
+        </button>
       </header>
 
       <main className="main-content">

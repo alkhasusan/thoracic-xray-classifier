@@ -17,6 +17,8 @@ model.features keeps working.
 Output: raw logits [batch, num_classes] (apply sigmoid for probabilities).
 """
 
+import inspect
+
 import torch.nn as nn
 from torchvision import models
 
@@ -34,8 +36,11 @@ DENSE_BLOCK_CHANNELS = [
 
 
 def get_scse_densenet121(num_classes=14, pretrained=True, reduction_ratio=16, **kwargs):
-    weights = models.DenseNet121_Weights.DEFAULT if pretrained else None
-    model = models.densenet121(weights=weights)
+    if "weights" in inspect.signature(models.densenet121).parameters:
+        weights = models.DenseNet121_Weights.DEFAULT if pretrained else None
+        model = models.densenet121(weights=weights)
+    else:
+        model = models.densenet121(pretrained=pretrained)
     model.classifier = nn.Linear(model.classifier.in_features, num_classes)
 
     # Wrap each dense block AFTER the pretrained weights are loaded.

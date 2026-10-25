@@ -75,6 +75,15 @@
   background: #36a981;
 }
 
+.status-dot-unavailable,
+.status-dot-offline {
+  background: #d97878;
+}
+
+.status-dot-checking {
+  background: #d6a747;
+}
+
 .main-content {
   width: min(1120px, 86%);
   margin: 0 auto;
@@ -736,5 +745,30 @@
     padding: 17px 5%;
     flex-wrap: wrap;
     font-size: 9px;
+  }
+}
+.comparison-nav-button {
+  padding: 10px 13px;
+  border: 1px solid #dce6ef;
+  border-radius: 9px;
+  background: white;
+  color: #34546d;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.comparison-nav-button:hover {
+  background: #f3f8fc;
+}
+
+.topbar {
+  gap: 12px;
+}
+
+@media (max-width: 520px) {
+  .comparison-nav-button {
+    padding: 8px;
+    font-size: 10px;
   }
 }
