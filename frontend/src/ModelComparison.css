@@ -317,6 +317,22 @@
   font-size: 13px;
 }
 
+.comparison-chart-description {
+  margin: 7px 0 0;
+  color: #77899a;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.comparison-chart-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  color: #8795a4;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
 .comparison-chart-empty {
   min-height: 120px;
   display: grid;
@@ -325,6 +341,108 @@
   color: #8795a4;
   font-size: 12px;
   text-align: center;
+}
+
+.comparison-model-select {
+  display: grid;
+  gap: 6px;
+  color: #718195;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.comparison-model-select select {
+  min-width: 190px;
+  padding: 9px 11px;
+  border: 1px solid #dce6ef;
+  border-radius: 8px;
+  background: white;
+  color: #2b4257;
+  font: inherit;
+}
+
+.comparison-model-select select:focus-visible {
+  outline: 3px solid #7db8da;
+  outline-offset: 2px;
+}
+
+.comparison-disease-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  margin: 18px 0;
+  padding: 13px 15px;
+  border-radius: 10px;
+  background: #f4f8fb;
+  color: #667b8e;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.comparison-disease-summary strong {
+  color: #2b4257;
+}
+
+.comparison-disease-chart {
+  display: grid;
+  gap: 11px;
+}
+
+.comparison-disease-row {
+  display: grid;
+  grid-template-columns: minmax(125px, 180px) minmax(100px, 1fr) 55px;
+  align-items: center;
+  gap: 12px;
+  color: #536b80;
+  font-size: 12px;
+}
+
+.comparison-disease-name {
+  overflow-wrap: anywhere;
+}
+
+.comparison-disease-track {
+  position: relative;
+  height: 12px;
+  overflow: hidden;
+  border-radius: 20px;
+  background-color: #edf2f6;
+  background-image: linear-gradient(
+    to right,
+    transparent calc(50% - 1px),
+    #bdcbd6 50%,
+    transparent calc(50% + 1px)
+  );
+}
+
+.comparison-disease-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #357ea3;
+}
+
+.comparison-disease-row strong {
+  color: #2b4257;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.comparison-disease-axis {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin: 9px 67px 0 192px;
+  color: #8795a4;
+  font-size: 10px;
+}
+
+.comparison-disease-axis span:nth-child(2) {
+  text-align: center;
+}
+
+.comparison-disease-axis span:last-child {
+  text-align: right;
 }
 
 .disease-table {
@@ -383,6 +501,19 @@
   .comparison-section-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .comparison-disease-row {
+    grid-template-columns: minmax(95px, 125px) minmax(50px, 1fr) 48px;
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .comparison-disease-axis {
+    margin-right: 56px;
+    margin-left: 133px;
+    gap: 8px;
+    font-size: 9px;
   }
 
   .comparison-card,
