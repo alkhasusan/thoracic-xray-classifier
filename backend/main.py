@@ -11,6 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from ml.src.datasets.labels import DISEASE_LABELS
+from ml.src.explainability.gradcam import run_gradcam_inference
 
 CHECKPOINT_PATH = PROJECT_ROOT / "ml" / "checkpoints" / "final_scse_densenet121.pth"
 
@@ -150,20 +151,30 @@ async def predict(file: UploadFile = File(...)):
             detail="The uploaded file is not a valid supported image.",
         )
 
-    input_tensor = inference_transform(image).unsqueeze(0).to(DEVICE)
-
-    import torch
-
-    with torch.inference_mode():
-        logits = model(input_tensor)
-        probabilities = torch.sigmoid(logits)[0].cpu().tolist()
+    gradcam_result = run_gradcam_inference(
+        model=model,
+        image=image,
+        transform=inference_transform,
+        disease_names=DISEASE_LABELS,
+        device=DEVICE,
+        top_k=3,
+    )
 
     predictions = [
         {"disease": label, "score": round(float(score), 6)}
-        for label, score in zip(DISEASE_LABELS, probabilities)
+        for label, score in gradcam_result["all_probabilities"].items()
     ]
 
     predictions.sort(key=lambda item: item["score"], reverse=True)
+    heatmaps = {
+        prediction["disease"]: {
+            "heatmap_png_base64": prediction["heatmap_png_base64"],
+            "evidence_type": prediction["evidence_type"],
+        }
+        for prediction in gradcam_result["predictions"]
+    }
+    for prediction in predictions[:3]:
+        prediction.update(heatmaps[prediction["disease"]])
 
     return {
         "model": "SCSE-DenseNet121",

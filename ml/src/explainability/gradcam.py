@@ -104,6 +104,7 @@ class GradCAM:
         self.target_layer = target_layer or _get_target_layer(model)
         self.activations = None
         self.gradients = None
+        self.last_evidence_type = "none"
         # NOTE: deliberately NOT using register_full_backward_hook here.
         # torchvision's DenseNet forward does `F.relu(features, inplace=True)`
         # immediately after norm5 -- a module-level backward hook on norm5
@@ -152,13 +153,24 @@ class GradCAM:
         activations = self.activations      # (1, C, h, w)
 
         weights = gradients.mean(dim=(2, 3), keepdim=True)     # (1, C, 1, 1)
-        cam = (weights * activations).sum(dim=1, keepdim=True)  # (1, 1, h, w)
-        cam = F.relu(cam)
+        raw_cam = (weights * activations).sum(dim=1, keepdim=True)
+        cam = F.relu(raw_cam).squeeze().detach().cpu().numpy()
 
-        cam = cam.squeeze().detach().cpu().numpy()
+        # If there is no positive class evidence, show the strongest
+        # negative evidence instead of returning a blank heatmap.
+        cam_min, cam_max = cam.min(), cam.max()
+        if cam_max - cam_min <= 1e-8:
+            negative_cam = F.relu(-raw_cam).squeeze().detach().cpu().numpy()
+            negative_min, negative_max = negative_cam.min(), negative_cam.max()
+            if negative_max - negative_min > 1e-8:
+                cam = negative_cam
+                self.last_evidence_type = "opposing"
+            else:
+                cam = np.zeros_like(negative_cam)
+                self.last_evidence_type = "none"
+        else:
+            self.last_evidence_type = "supporting"
 
-        # Normalize to [0, 1]. Guard against an all-zero map (can happen
-        # if a class had zero gradient contribution, e.g. saturated sigmoid).
         cam_min, cam_max = cam.min(), cam.max()
         if cam_max - cam_min > 1e-8:
             cam = (cam - cam_min) / (cam_max - cam_min)
@@ -304,6 +316,7 @@ def run_gradcam_inference(
                 "disease": disease_names[idx],
                 "probability": float(probs[idx]),
                 "heatmap_png_base64": image_to_base64_png(overlay),
+                "evidence_type": cam_extractor.last_evidence_type,
             })
 
     finally:

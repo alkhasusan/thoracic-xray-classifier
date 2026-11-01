@@ -130,6 +130,7 @@ function App() {
   }
 
   const topPrediction = results?.predictions?.[0];
+  const topPredictions = results?.predictions?.slice(0, 3) ?? [];
 
   if (page === "comparison") {
     return <ModelComparison onBack={() => setPage("predict")} />;
@@ -322,6 +323,34 @@ function App() {
                   </div>
                   <p>Highest score among the model's 14 outputs.</p>
                 </div>
+
+                <section className="gradcam-section" aria-labelledby="gradcam-title">
+                  <div className="score-heading">
+                    <h3 id="gradcam-title">Top three Grad-CAM maps</h3>
+                    <span>Influential regions</span>
+                  </div>
+                  <div className="gradcam-grid">
+                    {topPredictions.map((item, index) => (
+                      <figure className="gradcam-item" key={item.disease}>
+                        <img
+                          src={`data:image/png;base64,${item.heatmap_png_base64}`}
+                          alt={`Grad-CAM overlay for ${item.disease.replaceAll("_", " ")}`}
+                        />
+                        <figcaption>
+                          <span>{String(index + 1).padStart(2, "0")} · {item.disease.replaceAll("_", " ")}</span>
+                          <strong>{(item.score * 100).toFixed(1)}%</strong>
+                          <small className={`gradcam-evidence evidence-${item.evidence_type}`}>
+                            {item.evidence_type === "opposing"
+                              ? "Counter-signal"
+                              : item.evidence_type === "none"
+                                ? "No localized signal"
+                                : "Supporting signal"}
+                          </small>
+                        </figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                </section>
 
                 <div className="score-heading">
                   <h3>All disease labels</h3>
