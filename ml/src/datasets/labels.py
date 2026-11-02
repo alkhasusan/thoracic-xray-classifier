@@ -1,5 +1,5 @@
 """
-Utilities for handling disease labels in the NIH ChestX-ray14 dataset.
+Just for loading label names.
 """
 
 DISEASE_LABELS = [

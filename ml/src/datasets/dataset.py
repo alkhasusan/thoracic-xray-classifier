@@ -1,12 +1,11 @@
 """
 dataset.py
-PyTorch Dataset for the NIH ChestX-ray14 dataset.
 
-Optional image cache: if cache_dir is given, images are read from a pre-resized
-224x224 uint8 array (images_224.npy + names.txt, built by cache_images.py)
-instead of decoding the original 1024x1024 PNGs. The model sees identical
-pixels, because transforms.Resize((224, 224)) is the first transform anyway
-(and is a no-op on an image that is already 224x224).
+1. Locates the image using its path.
+2. Opens the image and converts it to RGB.
+3. Applies the specified image transformation.
+4. Extracts the 14 disease labels from that row.
+5. Returns the image tensor and label tensor.
 """
 
 from pathlib import Path

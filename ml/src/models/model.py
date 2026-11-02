@@ -3,15 +3,9 @@ model.py
 
 Model factory for multi-label Chest X-ray classification.
 
-This file contains ONLY the plain ImageNet-pretrained backbones used in the
-backbone comparison:
-
-    densenet121_baseline, resnet50, efficientnet_b0, vgg16_bn, mobilenet_v3_large
-
-No attention module appears here on purpose. The workflow is:
   1. train and compare the plain backbones (this registry),
   2. pick the best one,
-  3. add an attention module (see attention.py) to that winner only,
+  3. add an attention module (attention.py) to that winner only,
      in its own file.
 
 get_model_by_name() lets configs/model.yaml select a backbone by name.
